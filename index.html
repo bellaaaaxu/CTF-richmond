@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>周大福 CTF - 多色绳基定制系统</title>
+    <style>
+        /* 基础样式保持一致 */
+        body { font-family: -apple-system, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: #fff; border-bottom: 1px solid #eee; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-title { font-size: 16px; font-weight: bold; color: #333; }
+        .lang-switch { display: flex; gap: 5px; }
+        .lang-btn { padding: 4px 10px; border: 1px solid #ddd; border-radius: 15px; font-size: 11px; background: #fff; cursor: pointer; }
+        .lang-btn.active { background: #e60012; color: #fff; border-color: #e60012; }
+
+        /* ================= 1. 预览区 (优化背景切换) ================= */
+        .preview-area { 
+            position: relative; 
+            flex: 1; 
+            background-color: #fff;
+            background-repeat: no-repeat; 
+            background-position: center; 
+            background-size: 100% auto; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden; 
+            transition: background-image 0.4s ease-in-out; 
+        }
+        .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 2px; }
+        .charm-img-item { height: 100px; width: auto; cursor: pointer; padding: 10px 0; }
+
+        /* ================= 2. 绳基选择区 (新增) ================= */
+        .base-selector {
+            background: #fff;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .base-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #ddd;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .base-option.active { box-shadow: 0 0 0 2px #e60012; transform: scale(1.1); }
+        .base-red { background: #e60012; }
+        .base-black { background: #333; }
+        .base-palace { background: linear-gradient(45deg, #e60012 33%, #2e5c33 33% 66%, #d4af37 66%); }
+
+        /* 截图单样式 */
+        .ss-mode-text { text-align: center; color: #e60012; font-size: 18px; font-weight: bold; margin: 15px 0 5px 0; display: none; }
+        .selected-items-box { display: none; background: #fff; margin: 0 20px 20px 20px; padding: 12px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        .item-tag { display: inline-block; background: #fdf5f5; color: #d12e2e; border: 1px solid #fadcdc; padding: 4px 10px; margin: 3px; border-radius: 20px; font-size: 11px; }
+        .back-btn { display: none; margin: 0 auto 20px auto; padding: 12px 40px; background: #333; color: white; border: none; border-radius: 25px; cursor: pointer; }
+
+        /* 下方选品区 */
+        .selector-area { background: #fff; padding: 15px 20px; border-top: 1px solid #eee; }
+        .category-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 6px 12px; border: 1px solid #ddd; border-radius: 20px; background: #fff; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { background: #e60012; color: white; border-color: #e60012; }
+        .charm-list { display: flex; overflow-x: auto; gap: 10px; }
+        .charm-option { flex: 0 0 80px; display: flex; flex-direction: column; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px 5px; background: #fafafa; }
+        .option-img { width: 55px; height: 55px; object-fit: contain; }
+        .option-name { font-size: 10px; color: #333; text-align: center; height: 2.4em; overflow: hidden; margin-top: 5px; }
+        .action-bar { margin-top: 10px; display: flex; gap: 10px; }
+        .clear-btn { padding: 10px; background: #f8f8f8; color: #666; border: 1px solid #ddd; border-radius: 20px; font-size: 12px; flex: 1; }
+        .finish-btn { padding: 10px; background: linear-gradient(135deg, #dfba82, #c49a5d); color: #fff; border-radius: 20px; font-size: 13px; font-weight: bold; flex: 2; border: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-title" id="ui-title">专属红绳定制</div>
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="setLang('zh')">简</button>
+            <button class="lang-btn" onclick="setLang('hk')">繁</button>
+            <button class="lang-btn" onclick="setLang('en')">EN</button>
+        </div>
+    </header>
+
+    <div class="base-selector" id="baseSelector">
+        <span style="font-size: 12px; color: #888;" id="ui-baseTitle">选择绳基:</span>
+        <div class="base-option base-red active" onclick="setBaseString('red_string.png', this)"></div>
+        <div class="base-option base-black" onclick="setBaseString('black_string.png', this)"></div>
+        <div class="base-option base-palace" onclick="setBaseString('blue_string.png', this)"></div>
+    </div>
+    
+    <div class="ss-mode-text" id="ui-ssText">✨ 您的专属定制已生成 ✨</div>
+    <div class="selected-items-box" id="selectedItemsBox">
+        <div id="itemsTagContainer"></div>
+    </div>
+
+    <div class="preview-area" id="previewArea" style="background-image: url('red_string.png');">
+        <div class="charms-container" id="charmsContainer"></div>
+    </div>
+
+    <button class="back-btn" id="ui-backBtn" onclick="backToEdit()">返回修改</button>
+
+    <div class="selector-area" id="selectorArea">
+        <div class="category-tabs" id="categoryTabs"></div>
+        <div class="charm-list" id="charmList"></div>
+        <div class="action-bar">
+            <button class="clear-btn" id="ui-clearBtn" onclick="clearCharms()">重置</button>
+            <button class="finish-btn" id="ui-finishBtn" onclick="generateScreenshotView()">生成搭配单</button>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJT4fRUIxexAyspTNxyHthWxQoWAdhna23mywiclpTewbrso6DMsZqzg5eCnsU2Vod5RalPp7JorwY/pub?output=csv';
+
+        const i18n = {
+            zh: { title: "专属红绳定制", baseTitle: "选择绳基:", clear: "重置", finish: "生成搭配单", back: "返回修改", ssText: "✨ 您的专属定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宫系列", "配件系列": "配件系列", "成品推荐": "成品推荐" } },
+            hk: { title: "專屬紅繩定制", baseTitle: "選擇繩基:", clear: "重設", finish: "生成搭配單", back: "返回修改", ssText: "✨ 您的專屬定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宮系列", "配件系列": "配件系列", "成品推荐": "成品推薦" } },
+            en: { title: "Bespoke DIY", baseTitle: "String Color:", clear: "Reset", finish: "Design List", back: "Back", ssText: "✨ Your Custom Design ✨", categories: { "生肖系列": "Zodiac", "故宫系列": "Palace", "配件系列": "Spacers", "成品推荐": "Featured" } }
+        };
+
+        let currentLang = 'zh';
+        let charmInventory = {}; 
+        let currentCategory = ''; 
+        let currentBaseString = 'red_string.png'; // 默认底色
+        let isFinishedMode = false; // 是否在展示成品
+
+        // 切换绳子底色
+        function setBaseString(img, el) {
+            isFinishedMode = false;
+            currentBaseString = img;
+            document.querySelectorAll('.base-option').forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+            updatePreviewBackground();
+        }
+
+        function updatePreviewBackground() {
+            document.getElementById('previewArea').style.backgroundImage = `url('${currentBaseString}')`;
+            document.getElementById('previewArea').style.backgroundSize = '100% auto';
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.innerText.toLowerCase().includes(lang === 'hk' ? '繁' : lang.toUpperCase())));
+            updateUI();
+            renderTabs();
+            renderProducts(currentCategory);
+        }
+
+        function updateUI() {
+            const d = i18n[currentLang];
+            document.getElementById('ui-title').innerText = d.title;
+            document.getElementById('ui-baseTitle').innerText = d.baseTitle;
+            document.getElementById('ui-clearBtn').innerText = d.clear;
+            document.getElementById('ui-finishBtn').innerText = d.finish;
+            document.getElementById('ui-backBtn').innerText = d.back;
+            document.getElementById('ui-ssText').innerText = d.ssText;
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(CSV_URL);
+                const csvText = await response.text();
+                parseCSV(csvText); 
+                const cats = Object.keys(charmInventory);
+                if (cats.length > 0) {
+                    currentCategory = cats[0]; 
+                    setLang('zh');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function parseCSV(text) {
+            charmInventory = {}; 
+            const rows = text.split('\n');
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(',').map(c => c.replace(/"/g, '').trim());
+                if (cols.length >= 5) {
+                    const cat = cols[0];
+                    if (!charmInventory[cat]) charmInventory[cat] = [];
+                    charmInventory[cat].push({ zh: cols[1], hk: cols[2], en: cols[3], img: cols[4] });
+                }
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('categoryTabs');
+            container.innerHTML = '';
+            Object.keys(charmInventory).forEach(cat => {
+                const isActive = cat === currentCategory ? 'active' : '';
+                const name = i18n[currentLang].categories[cat] || cat;
+                container.innerHTML += `<button class="tab-btn ${isActive}" onclick="switchCategory('${cat}')">${name}</button>`;
+            });
+        }
+
+        function switchCategory(c) { currentCategory = c; renderTabs(); renderProducts(currentCategory); }
+
+        function renderProducts(catName) {
+            const container = document.getElementById('charmList');
+            container.innerHTML = ''; 
+            charmInventory[catName].forEach((item, idx) => {
+                const isFinished = catName === '成品推荐';
+                const action = isFinished ? `showFinished('${catName}', ${idx})` : `addCharm('${catName}', ${idx})`;
+                container.innerHTML += `<div class="charm-option" onclick="${action}"><img src="${item.img}" class="option-img"><div class="option-name">${item[currentLang]}</div></div>`;
+            });
+        }
+
+        function showFinished(cat, idx) {
+            isFinishedMode = true;
+            const item = charmInventory[cat][idx];
+            document.getElementById('charmsContainer').innerHTML = ''; 
+            const area = document.getElementById('previewArea');
+            area.style.backgroundImage = `url('${item.img}')`;
+            area.style.backgroundSize = 'contain';
+            finishedProductName = item[currentLang];
+        }
+
+        function addCharm(cat, idx) {
+            if (isFinishedMode) clearCharms(); 
+            const item = charmInventory[cat][idx];
+            const container = document.getElementById('charmsContainer');
+            if (container.children.length >= 12) return;
+            const img = document.createElement('img');
+            img.src = item.img; img.className = 'charm-img-item'; 
+            img.dataset.zh = item.zh; img.dataset.hk = item.hk; img.dataset.en = item.en;
+            img.onclick = function() { container.removeChild(img); };
+            container.appendChild(img);
+        }
+
+        function clearCharms() {
+            document.getElementById('charmsContainer').innerHTML = '';
+            isFinishedMode = false;
+            updatePreviewBackground();
+        }
+
+        function generateScreenshotView() {
+            document.getElementById('selectorArea').style.display = 'none';
+            document.getElementById('baseSelector').style.display = 'none';
+            document.getElementById('ui-ssText').style.display = 'block';
+            document.getElementById('ui-backBtn').style.display = 'block';
+            const tagContainer = document.getElementById('itemsTagContainer');
+            tagContainer.innerHTML = ''; 
+            
+            if (isFinishedMode) {
+                tagContainer.innerHTML += `<span class="item-tag">${finishedProductName}</span>`;
+            } else {
+                [...charmsContainer.children].forEach(c => {
+                    tagContainer.innerHTML += `<span class="item-tag">${c.dataset[currentLang]}</span>`;
+                });
+            }
+            document.getElementById('selectedItemsBox').style.display = 'block';
+            previewArea.style.flex = 'none'; previewArea.style.height = '60vh'; 
+        }
+
+        function backToEdit() {
+            document.getElementById('selectorArea').style.display = 'block';
+            document.getElementById('baseSelector').style.display = 'flex';
+            document.getElementById('ui-ssText').style.display = 'none';
+            document.getElementById('selectedItemsBox').style.display = 'none';
+            document.getElementById('ui-backBtn').style.display = 'none';
+            previewArea.style.flex = '1'; previewArea.style.height = 'auto';
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>

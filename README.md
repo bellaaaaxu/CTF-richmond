@@ -1,2 +1,2 @@
 # CTF-richmond
-CTF Charm DIY website
+CTF Charm bracelet DIY website

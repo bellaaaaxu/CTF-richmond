@@ -16,7 +16,7 @@
         .lang-btn { padding: 5px 12px; border: 1px solid #ddd; border-radius: 15px; font-size: 12px; background: #fff; cursor: pointer; }
         .lang-btn.active { background: var(--ctf-red); color: #fff; border-color: var(--ctf-red); }
 
-        /* 搜索/扫码框 */
+        /* 搜索框 */
         .search-bar { display: flex; background: #f0f0f0; border-radius: 8px; padding: 5px 12px; align-items: center; }
         .search-bar input { border: none; background: transparent; outline: none; width: 100%; font-size: 14px; padding: 5px; }
 
@@ -30,13 +30,9 @@
 
         /* 预览区 */
         .preview-area { position: relative; flex: 1; background: #fff no-repeat center / 100% auto; display: flex; justify-content: center; align-items: center; transition: background-image 0.4s; }
+        .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; }
         
-        /* 珠子容器：gap设为0，让垫片无缝衔接 */
-        .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 2px; }
-        
-        /* 珠子样式：默认110px，特殊逻辑会覆盖它 */
         .charm-img-item { 
-            height: 110px; 
             width: auto; 
             object-fit: contain; 
             cursor: pointer; 
@@ -44,14 +40,14 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
-        /* 截图单界面 */
+        /* 截图单 UI */
         .ss-mode-text { text-align: center; color: var(--ctf-red); font-size: 18px; font-weight: bold; margin: 15px 0; display: none; }
         .selected-items-box { display: none; background: #fff; margin: 0 20px 20px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); text-align: center; }
         .item-tag { display: inline-block; background: #fdf5f5; color: #d12e2e; border: 1px solid #fadcdc; padding: 5px 12px; margin: 3px; border-radius: 20px; font-size: 13px; }
 
         /* 选品区 */
         .selector-area { background: #fff; padding: 15px 20px; border-top: 1px solid #eee; }
-        .category-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .category-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
         .tab-btn { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; background: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; }
         .tab-btn.active { background: var(--ctf-red); color: #fff; border-color: var(--ctf-red); }
         .charm-list { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 5px; }
@@ -201,6 +197,9 @@
             addCharmToUI(item);
         }
 
+        // ==========================================
+        // 【核心修改：根据你的图片素材精准分级】
+        // ==========================================
         function addCharmToUI(item) {
             const container = document.getElementById('charmsContainer');
             if (container.children.length >= 12) return;
@@ -209,23 +208,33 @@
             img.src = item.img; 
             img.className = 'charm-img-item'; 
             
-            // ==========================================
-            // 【特殊吊坠/链条逻辑：自动变大+对齐】
-            // ==========================================
-            const isPendant = item.zh.includes('吊坠') || item.zh.includes('链条') || item.img.includes('马上有钱');
+            // 判定逻辑
+            // 吊坠款：包含“纹样1”、“马年福袋”或名字里带“吊坠”
+            const isPendant = item.zh.includes('吊坠');
+            // 链条款：包含“马上有钱”或名字里带“链条”
+            const isChain = item.zh.includes('链条');
+
             if (isPendant) {
-                img.style.height = '280px';      // 吊坠款拉高到150px
-				// 1. 垂直位置
-                img.style.marginTop = '70px';    
-                // 2. 水平位置：往左挪，消除跟前面垫片的缝隙
-                img.style.marginLeft = '-25px';   
+                // 【吊坠款】
+                img.style.height = '200px';      
+                img.style.marginTop = '80px';    
+                img.style.marginLeft = '-8px';  
                 img.style.zIndex = '10';
+                img.dataset.type = 'pendant'; 
+            } else if (isChain) {
+                // 【链条款】
+                img.style.height = '350px';      
+                img.style.marginTop = '150px';    
+                img.style.marginLeft = '-8px'; 
+                img.style.zIndex = '10';
+                img.dataset.type = 'chain';
             } else {
-                img.style.height = '110px';      // 普通转运珠110px
+                // 【普通款】
+                img.style.height = '110px';      
                 img.style.marginTop = '0px';
-		img.style.marginLeft = '0px';
+                img.style.marginLeft = '0px';
+                img.dataset.type = 'normal';
             }
-            // ==========================================
 
             img.dataset.zh = item.zh; img.dataset.hk = item.hk; img.dataset.en = item.en;
             img.onclick = function() { container.removeChild(img); };
@@ -268,17 +277,23 @@
             document.querySelector('header').style.display = 'none';
             document.getElementById('ui-ssText').style.display = 'block';
             document.getElementById('ui-backBtn').style.display = 'block';
+            
             const tagContainer = document.getElementById('itemsTagContainer');
             tagContainer.innerHTML = ''; 
+            
             if (isFinishedMode) {
                 tagContainer.innerHTML += `<span class="item-tag">${finishedName}</span>`;
             } else {
                 [...document.getElementById('charmsContainer').children].forEach(c => {
                     tagContainer.innerHTML += `<span class="item-tag">${c.dataset[currentLang]}</span>`;
+                    // 截图模式垂直位置修正
+                    if (c.dataset.type === 'pendant') c.style.marginTop = '45px'; 
+                    else if (c.dataset.type === 'chain') c.style.marginTop = '12px';
                 });
             }
             document.getElementById('selectedItemsBox').style.display = 'block';
-            document.getElementById('previewArea').style.flex = 'none'; document.getElementById('previewArea').style.height = '60vh'; 
+            const previewArea = document.getElementById('previewArea');
+            previewArea.style.flex = 'none'; previewArea.style.height = '60vh'; 
         }
 
         function backToEdit() {
@@ -288,6 +303,12 @@
             document.getElementById('ui-ssText').style.display = 'none';
             document.getElementById('selectedItemsBox').style.display = 'none';
             document.getElementById('ui-backBtn').style.display = 'none';
+            
+            [...document.getElementById('charmsContainer').children].forEach(c => {
+                if (c.dataset.type === 'pendant') c.style.marginTop = '72px';
+                else if (c.dataset.type === 'chain') c.style.marginTop = '20px';
+            });
+
             document.getElementById('previewArea').style.flex = '1'; document.getElementById('previewArea').style.height = 'auto';
         }
 
@@ -295,8 +316,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-

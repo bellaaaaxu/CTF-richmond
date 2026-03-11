@@ -30,8 +30,6 @@
 
         /* 预览区 */
         .preview-area { position: relative; flex: 1; background: #fff no-repeat center / 100% auto; display: flex; justify-content: center; align-items: center; transition: background-image 0.4s; }
-        
-        /* 间距由 gap 控制，建议 8px 保持高级感 */
         .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; }
         
         .charm-img-item { 
@@ -40,6 +38,27 @@
             cursor: pointer; 
             transition: transform 0.2s;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        /* 售罄样式：变灰并锁定 */
+        .charm-option.out-of-stock {
+            opacity: 0.4;
+            filter: grayscale(1);
+            cursor: not-allowed;
+            position: relative;
+        }
+        .charm-option.out-of-stock::after {
+            content: "SOLD OUT";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
         }
 
         /* 截图单 UI */
@@ -142,7 +161,11 @@
                 if (cols.length >= 6) {
                     const sku = cols[0], cat = cols[1];
                     if (!charmInventory[cat]) charmInventory[cat] = [];
-                    charmInventory[cat].push({ sku, zh: cols[2], hk: cols[3], en: cols[4], img: cols[5] });
+                    // 读取第 7 列库存状态
+                    charmInventory[cat].push({ 
+                        sku, zh: cols[2], hk: cols[3], en: cols[4], img: cols[5],
+                        stockStatus: cols[6] || "有货"
+                    });
                 }
             }
         }
@@ -175,33 +198,18 @@
             const container = document.getElementById('charmList');
             container.innerHTML = ''; 
             charmInventory[catName].forEach((item, idx) => {
+                const isOut = item.stockStatus === "无货";
                 const action = catName === '成品推荐' ? `showFinished('${catName}', ${idx})` : `addItem('${catName}', ${idx})`;
-                container.innerHTML += `<div class="charm-option" onclick="${action}"><img src="${item.img}" class="option-img"><div class="option-name">${item[currentLang]}</div></div>`;
+                
+                container.innerHTML += `
+                    <div class="charm-option ${isOut ? 'out-of-stock' : ''}" 
+                         onclick="${isOut ? "alert('此款暂时售罄 / Out of stock')" : action}">
+                        <img src="${item.img}" class="option-img">
+                        <div class="option-name">${item[currentLang]}</div>
+                    </div>`;
             });
         }
 
-        function setBase(img, el) {
-            isFinishedMode = false; currentBase = img;
-            document.querySelectorAll('.base-option').forEach(opt => opt.classList.remove('active'));
-            el.classList.add('active');
-            refreshBackground();
-        }
-
-        function refreshBackground() {
-            const area = document.getElementById('previewArea');
-            area.style.backgroundImage = `url('${currentBase}')`;
-            area.style.backgroundSize = '100% auto';
-        }
-
-        function addItem(cat, idx) {
-            if (isFinishedMode) clearCharms();
-            const item = charmInventory[cat][idx];
-            addCharmToUI(item);
-        }
-
-        // ==========================================
-        // 【核心修改：智能响应式分级适配】
-        // ==========================================
         function addCharmToUI(item) {
             const container = document.getElementById('charmsContainer');
             if (container.children.length >= 12) return;
@@ -210,29 +218,29 @@
             img.src = item.img; 
             img.className = 'charm-img-item'; 
             
-            // 检测是否为手机
+            // 检测比例：手机 0.7，iPad/电脑 1.0
             const isMobile = window.innerWidth < 600;
-            const ratio = isMobile ? 0.5 : 1.0; // 手机端缩放系数 0.7
+            const ratio = isMobile ? 0.7 : 1.0; 
 
             const isPendant = item.zh.includes('吊坠');
             const isChain = item.zh.includes('链条');
 
             if (isPendant) {
-                // 【吊坠款】原 iPad 参数: 200px / 80px / -8px
+                // 【吊坠款】iPad 参数: 200px / 80px / -8px
                 img.style.height = (200 * ratio) + 'px';      
                 img.style.marginTop = (80 * ratio) + 'px';    
                 img.style.marginLeft = (-8 * ratio) + 'px';  
                 img.style.zIndex = '10';
                 img.dataset.type = 'pendant'; 
             } else if (isChain) {
-                // 【链条款】原 iPad 参数: 350px / 150px / -8px
+                // 【链条款】iPad 参数: 350px / 150px / -8px
                 img.style.height = (350 * ratio) + 'px';      
                 img.style.marginTop = (150 * ratio) + 'px';    
                 img.style.marginLeft = (-8 * ratio) + 'px'; 
                 img.style.zIndex = '10';
                 img.dataset.type = 'chain';
             } else {
-                // 【普通款】原 iPad 参数: 110px
+                // 【普通款】iPad 参数: 110px
                 img.style.height = (110 * ratio) + 'px';      
                 img.style.marginTop = '0px';
                 img.style.marginLeft = '0px';
@@ -248,15 +256,33 @@
             if (e.key === 'Enter') {
                 const sku = e.target.value.trim().toUpperCase();
                 for (let cat in charmInventory) {
-                    const item = charmInventory[cat].find(i => i.sku.toUpperCase() === sku);
-                    if (item) {
-                        if (cat === '成品推荐') showFinished(cat, charmInventory[cat].indexOf(item));
-                        else addCharmToUI(item);
+                    const idx = charmInventory[cat].findIndex(i => i.sku.toUpperCase() === sku);
+                    if (idx !== -1) {
+                        const item = charmInventory[cat][idx];
+                        if (item.stockStatus === "无货") {
+                            alert("该货号目前无货 / SKU Out of Stock");
+                        } else {
+                            if (cat === '成品推荐') showFinished(cat, idx);
+                            else addItem(cat, idx);
+                        }
                         e.target.value = ''; return;
                     }
                 }
-                alert("SKU not found / 未找到货号");
+                alert("未找到货号 / SKU not found");
             }
+        }
+
+        function setBase(img, el) {
+            isFinishedMode = false; currentBase = img;
+            document.querySelectorAll('.base-option').forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+            refreshBackground();
+        }
+
+        function refreshBackground() {
+            const area = document.getElementById('previewArea');
+            area.style.backgroundImage = `url('${currentBase}')`;
+            area.style.backgroundSize = '100% auto';
         }
 
         function showFinished(cat, idx) {
@@ -277,7 +303,6 @@
         function generateScreenshotView() {
             const isMobile = window.innerWidth < 600;
             const ratio = isMobile ? 0.7 : 1.0;
-
             document.getElementById('selectorArea').style.display = 'none';
             document.getElementById('baseSelector').style.display = 'none';
             document.querySelector('header').style.display = 'none';
@@ -292,9 +317,8 @@
             } else {
                 [...document.getElementById('charmsContainer').children].forEach(c => {
                     tagContainer.innerHTML += `<span class="item-tag">${c.dataset[currentLang]}</span>`;
-                    // 截图模式垂直位置修正
                     if (c.dataset.type === 'pendant') c.style.marginTop = (45 * ratio) + 'px'; 
-                    else if (c.dataset.type === 'chain') c.style.marginTop = (15 * ratio) + 'px';
+                    else if (c.dataset.type === 'chain') c.style.marginTop = (80 * ratio) + 'px';
                 });
             }
             document.getElementById('selectedItemsBox').style.display = 'block';
@@ -306,25 +330,8 @@
         function backToEdit() {
             const isMobile = window.innerWidth < 600;
             const ratio = isMobile ? 0.7 : 1.0;
-
             document.getElementById('selectorArea').style.display = 'block';
             document.getElementById('baseSelector').style.display = 'flex';
             document.querySelector('header').style.display = 'flex';
             document.getElementById('ui-ssText').style.display = 'none';
-            document.getElementById('selectedItemsBox').style.display = 'none';
-            document.getElementById('ui-backBtn').style.display = 'none';
-            
-            [...document.getElementById('charmsContainer').children].forEach(c => {
-                if (c.dataset.type === 'pendant') c.style.marginTop = (80 * ratio) + 'px';
-                else if (c.dataset.type === 'chain') c.style.marginTop = (150 * ratio) + 'px';
-            });
-
-            document.getElementById('previewArea').style.flex = '1'; 
-            document.getElementById('previewArea').style.height = 'auto';
-        }
-
-        window.onload = loadData;
-    </script>
-</body>
-</html>
-
+            document.getElementById('selectedItemsBox').

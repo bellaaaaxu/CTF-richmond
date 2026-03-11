@@ -214,12 +214,16 @@
             // ==========================================
             const isPendant = item.zh.includes('吊坠') || item.zh.includes('链条') || item.img.includes('马上有钱');
             if (isPendant) {
-                img.style.height = '250px';      // 吊坠款拉高到150px
-                img.style.marginTop = '25px';    // 扣头对齐绳子
+                img.style.height = '150px';      // 吊坠款拉高到150px
+		// 1. 垂直位置：从 25px 增加到 50px，把吊坠压下去，让扣头挂在绳上
+                img.style.marginTop = '50px';    
+                // 2. 水平位置：往左挪 8px，消除跟前面垫片的缝隙
+                img.style.marginLeft = '-8px';   
                 img.style.zIndex = '10';
             } else {
                 img.style.height = '110px';      // 普通转运珠110px
                 img.style.marginTop = '0px';
+		img.style.marginLeft = '0px';
             }
             // ==========================================
 
@@ -291,5 +295,3 @@
     </script>
 </body>
 </html>
-
-

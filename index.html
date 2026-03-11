@@ -30,6 +30,8 @@
 
         /* 预览区 */
         .preview-area { position: relative; flex: 1; background: #fff no-repeat center / 100% auto; display: flex; justify-content: center; align-items: center; transition: background-image 0.4s; }
+        
+        /* 间距由 gap 控制，建议 8px 保持高级感 */
         .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; }
         
         .charm-img-item { 
@@ -198,7 +200,7 @@
         }
 
         // ==========================================
-        // 【核心修改：根据你的图片素材精准分级】
+        // 【核心修改：智能响应式分级适配】
         // ==========================================
         function addCharmToUI(item) {
             const container = document.getElementById('charmsContainer');
@@ -208,29 +210,30 @@
             img.src = item.img; 
             img.className = 'charm-img-item'; 
             
-            // 判定逻辑
-            // 吊坠款：包含“纹样1”、“马年福袋”或名字里带“吊坠”
+            // 检测是否为手机
+            const isMobile = window.innerWidth < 600;
+            const ratio = isMobile ? 0.7 : 1.0; // 手机端缩放系数 0.7
+
             const isPendant = item.zh.includes('吊坠');
-            // 链条款：包含“马上有钱”或名字里带“链条”
             const isChain = item.zh.includes('链条');
 
             if (isPendant) {
-                // 【吊坠款】
-                img.style.height = '200px';      
-                img.style.marginTop = '80px';    
-                img.style.marginLeft = '-8px';  
+                // 【吊坠款】原 iPad 参数: 200px / 80px / -8px
+                img.style.height = (200 * ratio) + 'px';      
+                img.style.marginTop = (80 * ratio) + 'px';    
+                img.style.marginLeft = (-8 * ratio) + 'px';  
                 img.style.zIndex = '10';
                 img.dataset.type = 'pendant'; 
             } else if (isChain) {
-                // 【链条款】
-                img.style.height = '350px';      
-                img.style.marginTop = '150px';    
-                img.style.marginLeft = '-8px'; 
+                // 【链条款】原 iPad 参数: 350px / 150px / -8px
+                img.style.height = (350 * ratio) + 'px';      
+                img.style.marginTop = (150 * ratio) + 'px';    
+                img.style.marginLeft = (-8 * ratio) + 'px'; 
                 img.style.zIndex = '10';
                 img.dataset.type = 'chain';
             } else {
-                // 【普通款】
-                img.style.height = '110px';      
+                // 【普通款】原 iPad 参数: 110px
+                img.style.height = (110 * ratio) + 'px';      
                 img.style.marginTop = '0px';
                 img.style.marginLeft = '0px';
                 img.dataset.type = 'normal';
@@ -272,6 +275,9 @@
         }
 
         function generateScreenshotView() {
+            const isMobile = window.innerWidth < 600;
+            const ratio = isMobile ? 0.7 : 1.0;
+
             document.getElementById('selectorArea').style.display = 'none';
             document.getElementById('baseSelector').style.display = 'none';
             document.querySelector('header').style.display = 'none';
@@ -287,16 +293,20 @@
                 [...document.getElementById('charmsContainer').children].forEach(c => {
                     tagContainer.innerHTML += `<span class="item-tag">${c.dataset[currentLang]}</span>`;
                     // 截图模式垂直位置修正
-                    if (c.dataset.type === 'pendant') c.style.marginTop = '45px'; 
-                    else if (c.dataset.type === 'chain') c.style.marginTop = '12px';
+                    if (c.dataset.type === 'pendant') c.style.marginTop = (45 * ratio) + 'px'; 
+                    else if (c.dataset.type === 'chain') c.style.marginTop = (15 * ratio) + 'px';
                 });
             }
             document.getElementById('selectedItemsBox').style.display = 'block';
             const previewArea = document.getElementById('previewArea');
-            previewArea.style.flex = 'none'; previewArea.style.height = '60vh'; 
+            previewArea.style.flex = 'none'; 
+            previewArea.style.height = isMobile ? '45vh' : '60vh'; 
         }
 
         function backToEdit() {
+            const isMobile = window.innerWidth < 600;
+            const ratio = isMobile ? 0.7 : 1.0;
+
             document.getElementById('selectorArea').style.display = 'block';
             document.getElementById('baseSelector').style.display = 'flex';
             document.querySelector('header').style.display = 'flex';
@@ -305,11 +315,12 @@
             document.getElementById('ui-backBtn').style.display = 'none';
             
             [...document.getElementById('charmsContainer').children].forEach(c => {
-                if (c.dataset.type === 'pendant') c.style.marginTop = '72px';
-                else if (c.dataset.type === 'chain') c.style.marginTop = '20px';
+                if (c.dataset.type === 'pendant') c.style.marginTop = (80 * ratio) + 'px';
+                else if (c.dataset.type === 'chain') c.style.marginTop = (150 * ratio) + 'px';
             });
 
-            document.getElementById('previewArea').style.flex = '1'; document.getElementById('previewArea').style.height = 'auto';
+            document.getElementById('previewArea').style.flex = '1'; 
+            document.getElementById('previewArea').style.height = 'auto';
         }
 
         window.onload = loadData;

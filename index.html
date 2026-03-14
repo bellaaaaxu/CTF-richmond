@@ -8,15 +8,28 @@
         :root { --ctf-red: #e60012; --ctf-gold: #c49a5d; }
         body { font-family: -apple-system, "Helvetica Neue", sans-serif; background: #f8f8f8; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* 顶栏 */
+        /* 更新提示气泡 */
+        #update-toast {
+            position: fixed; top: -70px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); color: white; padding: 12px 20px;
+            border-radius: 30px; font-size: 13px; z-index: 10000;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        #update-toast.show { top: 25px; }
+        #update-toast button {
+            background: var(--ctf-gold); border: none; color: white;
+            padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold;
+        }
+
+        /* 顶栏与搜索 */
         header { background: #fff; border-bottom: 1px solid #eee; padding: 8px 15px; display: flex; flex-direction: column; gap: 8px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         .logo-title { font-size: 16px; font-weight: bold; color: #333; }
         .lang-switch { display: flex; gap: 4px; }
         .lang-btn { padding: 5px 12px; border: 1px solid #ddd; border-radius: 15px; font-size: 12px; background: #fff; cursor: pointer; }
         .lang-btn.active { background: var(--ctf-red); color: #fff; border-color: var(--ctf-red); }
-
-        /* 搜索框 */
         .search-bar { display: flex; background: #f0f0f0; border-radius: 8px; padding: 5px 12px; align-items: center; }
         .search-bar input { border: none; background: transparent; outline: none; width: 100%; font-size: 14px; padding: 5px; }
 
@@ -24,49 +37,19 @@
         .base-selector { background: #fff; padding: 10px 15px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f0f0f0; }
         .base-option { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #ddd; cursor: pointer; }
         .base-option.active { box-shadow: 0 0 0 2px var(--ctf-red); transform: scale(1.1); }
-        .base-red { background: #e60012; }
-        .base-black { background: #333; }
-        .base-palace { background: linear-gradient(45deg, #e60012 33%, #2e5c33 33% 66%, #d4af37 66%); }
+        .base-red { background: #e60012; } .base-black { background: #333; } .base-palace { background: linear-gradient(45deg, #e60012 33%, #2e5c33 33% 66%, #d4af37 66%); }
 
-        /* 预览区 */
+        /* 预览区与画布 */
         .preview-area { position: relative; flex: 1; background: #fff no-repeat center / 100% auto; display: flex; justify-content: center; align-items: center; transition: background-image 0.4s; }
         .charms-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 8px; }
-        
-        .charm-img-item { 
-            width: auto; 
-            object-fit: contain; 
-            cursor: pointer; 
-            transition: transform 0.2s;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        }
+        .charm-img-item { width: auto; object-fit: contain; cursor: pointer; transition: transform 0.2s, opacity 0.3s; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
 
-        /* 售罄样式：变灰并锁定 */
-        .charm-option.out-of-stock {
-            opacity: 0.4;
-            filter: grayscale(1);
-            cursor: not-allowed;
-            position: relative;
-        }
+        /* 售罄与选品区 */
+        .charm-option.out-of-stock { opacity: 0.4; filter: grayscale(1); cursor: not-allowed !important; position: relative; }
         .charm-option.out-of-stock::after {
-            content: "SOLD OUT";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.6);
-            color: white;
-            font-size: 10px;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-weight: bold;
+            content: "SOLD OUT"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold;
         }
-
-        /* 截图单 UI */
-        .ss-mode-text { text-align: center; color: var(--ctf-red); font-size: 18px; font-weight: bold; margin: 15px 0; display: none; }
-        .selected-items-box { display: none; background: #fff; margin: 0 20px 20px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); text-align: center; }
-        .item-tag { display: inline-block; background: #fdf5f5; color: #d12e2e; border: 1px solid #fadcdc; padding: 5px 12px; margin: 3px; border-radius: 20px; font-size: 13px; }
-
-        /* 选品区 */
         .selector-area { background: #fff; padding: 15px 20px; border-top: 1px solid #eee; }
         .category-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
         .tab-btn { padding: 8px 16px; border: 1px solid #ddd; border-radius: 20px; background: #fff; font-size: 13px; white-space: nowrap; cursor: pointer; }
@@ -76,13 +59,22 @@
         .option-img { width: 65px; height: 65px; object-fit: contain; }
         .option-name { font-size: 11px; color: #333; text-align: center; margin-top: 6px; height: 2.4em; overflow: hidden; }
 
+        /* 截图单与控制 */
         .action-bar { margin-top: 15px; display: flex; gap: 10px; }
         .clear-btn { padding: 12px; background: #f8f8f8; color: #666; border: 1px solid #ddd; border-radius: 25px; flex: 1; cursor: pointer; }
         .finish-btn { padding: 12px; background: linear-gradient(135deg, #dfba82, #c49a5d); color: #fff; border: none; border-radius: 25px; font-weight: bold; flex: 2; cursor: pointer; }
-        .back-btn { display: none; margin: 0 auto 30px; padding: 12px 50px; background: #333; color: white; border-radius: 25px; border: none; font-size: 16px; cursor: pointer; }
+        .back-btn { display: none; margin: 15px auto 30px; padding: 12px 50px; background: #333; color: white; border-radius: 25px; font-size: 16px; cursor: pointer; }
+        .ss-mode-text { text-align: center; color: var(--ctf-red); font-size: 18px; font-weight: bold; margin: 15px 0; display: none; }
+        .selected-items-box { display: none; background: #fff; margin: 0 20px 20px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); text-align: center; }
+        .item-tag { display: inline-block; background: #fdf5f5; color: #d12e2e; border: 1px solid #fadcdc; padding: 5px 12px; margin: 3px; border-radius: 20px; font-size: 13px; }
     </style>
 </head>
 <body>
+
+    <div id="update-toast">
+        <span>📢 库存信息已更新</span>
+        <button onclick="refreshDataSilently()">立即同步</button>
+    </div>
 
     <header>
         <div class="header-top">
@@ -93,9 +85,7 @@
                 <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
             </div>
         </div>
-        <div class="search-bar">
-            <input type="text" id="skuSearch" placeholder="输入货号或扫码 / Enter SKU..." onkeypress="handleSearch(event)">
-        </div>
+        <div class="search-bar"><input type="text" id="skuSearch" placeholder="输入货号..." onkeypress="handleSearch(event)"></div>
     </header>
 
     <div class="base-selector" id="baseSelector">
@@ -106,9 +96,7 @@
     </div>
     
     <div class="ss-mode-text" id="ui-ssText">✨ 您的专属定制已生成 ✨</div>
-    <div class="selected-items-box" id="selectedItemsBox">
-        <div id="itemsTagContainer"></div>
-    </div>
+    <div class="selected-items-box" id="selectedItemsBox"><div id="itemsTagContainer"></div></div>
 
     <div class="preview-area" id="previewArea" style="background-image: url('red_string.png');">
         <div class="charms-container" id="charmsContainer"></div>
@@ -126,29 +114,91 @@
     </div>
 
     <script>
+        // ---【配置区】---
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz4XGWmCC2L-3gohQYNb-tfncbzKwMSOZhxelv8I92mPZ7cIb8vPYTl8_lh_05K9LHhrQ/exec';
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJT4fRUIxexAyspTNxyHthWxQoWAdhna23mywiclpTewbrso6DMsZqzg5eCnsU2Vod5RalPp7JorwY/pub?output=csv';
+        
+        // 🌟 图片最简公式：图片存放的基础文件夹
+        // 请替换为您 GitHub 仓库中透明图片的真实 URL 路径（末尾带斜杠）
+        const IMG_BASE_URL = 'https://raw.githubusercontent.com/bellaaaaxu/CTF-richmond/main/charms/'; 
 
         const i18n = {
-            zh: { title: "专属红绳定制", baseTitle: "选择绳基:", clear: "重置", finish: "生成搭配单", back: "返回继续修改", ssText: "✨ 您的专属定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宫系列", "配件系列": "配件系列", "成品推荐": "成品推荐" } },
-            hk: { title: "專屬紅繩定制", baseTitle: "選擇繩基:", clear: "重設", finish: "生成搭配單", back: "返回繼續修改", ssText: "✨ 您的專屬定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宮系列", "配件系列": "配件系列", "成品推荐": "成品推薦" } },
-            en: { title: "Bespoke Jewelry DIY", baseTitle: "String Color:", clear: "Reset", finish: "Create Design", back: "Back", ssText: "✨ Your Custom Design is Ready ✨", categories: { "生肖系列": "Zodiac", "故宫系列": "Forbidden City", "配件系列": "Spacers", "成品推荐": "Featured" } }
+            zh: { title: "专属红绳定制", baseTitle: "选择绳基:", clear: "重置", finish: "生成搭配单", back: "返回继续修改", ssText: "✨ 您的专属定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宫系列", "配件系列": "配件系列", "成品推荐": "成品推荐" }, oosAlert: "设计中有配件已售罄，已为您自动移除。" },
+            hk: { title: "專屬紅繩定制", baseTitle: "選擇繩基:", clear: "重設", finish: "生成搭配單", back: "返回繼續修改", ssText: "✨ 專屬定制已生成 ✨", categories: { "生肖系列": "生肖系列", "故宫系列": "故宮系列", "配件系列": "配件系列", "成品推荐": "成品推薦" }, oosAlert: "設計中有配件已售罄，已為您自動移除。" },
+            en: { title: "Bespoke DIY", baseTitle: "String Color:", clear: "Reset", finish: "Create Design", back: "Back", ssText: "✨ Your Design is Ready ✨", categories: { "生肖系列": "Zodiac", "故宫系列": "Forbidden City", "配件系列": "Spacers", "成品推荐": "Featured" }, oosAlert: "Items out of stock have been removed from your design." }
         };
 
-        let currentLang = 'zh';
-        let charmInventory = {}; 
-        let currentCategory = ''; 
-        let currentBase = 'red_string.png';
-        let isFinishedMode = false;
-        let finishedName = '';
+        let currentLang = 'zh', charmInventory = {}, currentCategory = '', currentBase = 'red_string.png';
+        let isFinishedMode = false, finishedName = '', lastDataFingerprint = "";
 
-        async function loadData() {
+        // 🌟 辅助：智能生成图片路径
+        function getSmartImagePath(skuFromSheet, imgFromSheet) {
+            // 如果表格里填了完整的 http 链接，就直接用链接
+            if (imgFromSheet && imgFromSheet.startsWith('http')) return imgFromSheet;
+            // 否则：自动拼接 IMG_BASE_URL + 货号 + .png
+            return IMG_BASE_URL + skuFromSheet + '.png';
+        }
+
+        async function loadData(isSilent = false) {
             try {
-                const response = await fetch(CSV_URL);
-                const csvText = await response.text();
-                parseCSV(csvText); 
-                const cats = Object.keys(charmInventory);
-                if (cats.length > 0) { currentCategory = cats[0]; setLang('zh'); }
-            } catch (e) { console.error(e); }
+                const response = await fetch(API_URL);
+                const jsonData = await response.json(); 
+                const currentFingerprint = JSON.stringify(jsonData);
+                if (lastDataFingerprint && currentFingerprint !== lastDataFingerprint) {
+                    document.getElementById('update-toast').classList.add('show');
+                }
+                lastDataFingerprint = currentFingerprint;
+                processJsonData(jsonData); 
+                if (!isSilent) initializeUI();
+            } catch (e) {
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                parseCSV(text);
+                if (!isSilent) initializeUI();
+            }
+        }
+
+        function initializeUI() {
+            const cats = Object.keys(charmInventory);
+            if (cats.length > 0) { currentCategory = cats[0]; setLang(currentLang); }
+        }
+
+        async function refreshDataSilently() {
+            await loadData(true);
+            renderProducts(currentCategory);
+            checkAndRemoveOOSFromCanvas();
+            document.getElementById('update-toast').classList.remove('show');
+        }
+
+        function checkAndRemoveOOSFromCanvas() {
+            const container = document.getElementById('charmsContainer');
+            const charmsInDesign = Array.from(container.children);
+            let removedCount = 0;
+            const oosSkus = new Set();
+            for (let cat in charmInventory) {
+                charmInventory[cat].forEach(item => { if (item.stockStatus === "无货") oosSkus.add(item.sku); });
+            }
+            charmsInDesign.forEach(charm => {
+                if (oosSkus.has(charm.dataset.sku)) { container.removeChild(charm); removedCount++; }
+            });
+            if (removedCount > 0) alert(i18n[currentLang].oosAlert);
+        }
+
+        setInterval(() => {
+            if (document.getElementById('selectorArea').style.display !== 'none') loadData(true);
+        }, 60000);
+
+        function processJsonData(data) {
+            charmInventory = {}; 
+            data.forEach(cols => {
+                if (cols.length >= 6) {
+                    const sku = cols[0], cat = cols[1];
+                    if (!charmInventory[cat]) charmInventory[cat] = [];
+                    // 🌟 使用最简公式
+                    const finalImg = getSmartImagePath(sku, cols[5]);
+                    charmInventory[cat].push({ sku, zh: cols[2], hk: cols[3], en: cols[4], img: finalImg, stockStatus: cols[6] || "有货" });
+                }
+            });
         }
 
         function parseCSV(text) {
@@ -161,11 +211,9 @@
                 if (cols.length >= 6) {
                     const sku = cols[0], cat = cols[1];
                     if (!charmInventory[cat]) charmInventory[cat] = [];
-                    // 读取第 7 列库存状态
-                    charmInventory[cat].push({ 
-                        sku, zh: cols[2], hk: cols[3], en: cols[4], img: cols[5],
-                        stockStatus: cols[6] || "有货"
-                    });
+                    // 🌟 使用最简公式
+                    const finalImg = getSmartImagePath(sku, cols[5]);
+                    charmInventory[cat].push({ sku, zh: cols[2], hk: cols[3], en: cols[4], img: finalImg, stockStatus: cols[6] || "有货" });
                 }
             }
         }
@@ -197,57 +245,48 @@
         function renderProducts(catName) {
             const container = document.getElementById('charmList');
             container.innerHTML = ''; 
-            charmInventory[catName].forEach((item, idx) => {
+            if(!charmInventory[catName]) return;
+            const sortedItems = [...charmInventory[catName]].sort((a, b) => {
+                const aOut = a.stockStatus === "无货" ? 1 : 0;
+                const bOut = b.stockStatus === "无货" ? 1 : 0;
+                return aOut - bOut;
+            });
+            sortedItems.forEach((item) => {
                 const isOut = item.stockStatus === "无货";
-                const action = catName === '成品推荐' ? `showFinished('${catName}', ${idx})` : `addItem('${catName}', ${idx})`;
-                
+                const actionData = JSON.stringify(item).replace(/"/g, '&quot;');
                 container.innerHTML += `
-                    <div class="charm-option ${isOut ? 'out-of-stock' : ''}" 
-                         onclick="${isOut ? "alert('此款暂时售罄 / Out of stock')" : action}">
+                    <div class="charm-option ${isOut ? 'out-of-stock' : ''}" onclick="${isOut ? "alert('售罄 / Out of stock')" : `handleItemClick(${actionData})`}">
                         <img src="${item.img}" class="option-img">
                         <div class="option-name">${item[currentLang]}</div>
                     </div>`;
             });
         }
 
+        function handleItemClick(item) {
+            if (isFinishedMode) clearCharms();
+            if (currentCategory === '成品推荐') {
+                isFinishedMode = true;
+                const area = document.getElementById('previewArea');
+                area.style.backgroundImage = `url('${item.img}')`;
+                area.style.backgroundSize = 'contain';
+                finishedName = item[currentLang];
+            } else { addCharmToUI(item); }
+        }
+
         function addCharmToUI(item) {
             const container = document.getElementById('charmsContainer');
             if (container.children.length >= 12) return;
-            
             const img = document.createElement('img');
-            img.src = item.img; 
-            img.className = 'charm-img-item'; 
+            img.src = item.img; img.className = 'charm-img-item';
+            const ratio = window.innerWidth < 600 ? 0.7 : 1.0;
+            const isPendant = item.zh.includes('吊坠') || item.img.includes('吊坠');
+            const isChain = item.zh.includes('链条') || item.img.includes('链条');
+
+            if (isPendant) { img.style.height = (200*ratio)+'px'; img.style.marginTop = (80*ratio)+'px'; img.style.marginLeft = (-8*ratio)+'px'; img.style.zIndex = '10'; img.dataset.type = 'pendant'; }
+            else if (isChain) { img.style.height = (350*ratio)+'px'; img.style.marginTop = (150*ratio)+'px'; img.style.marginLeft = (-8*ratio)+'px'; img.style.zIndex = '10'; img.dataset.type = 'chain'; }
+            else { img.style.height = (110*ratio)+'px'; img.dataset.type = 'normal'; }
             
-            // 检测比例：手机 0.7，iPad/电脑 1.0
-            const isMobile = window.innerWidth < 600;
-            const ratio = isMobile ? 0.7 : 1.0; 
-
-            const isPendant = item.zh.includes('吊坠');
-            const isChain = item.zh.includes('链条');
-
-            if (isPendant) {
-                // 【吊坠款】iPad 参数: 200px / 80px / -8px
-                img.style.height = (200 * ratio) + 'px';      
-                img.style.marginTop = (80 * ratio) + 'px';    
-                img.style.marginLeft = (-8 * ratio) + 'px';  
-                img.style.zIndex = '10';
-                img.dataset.type = 'pendant'; 
-            } else if (isChain) {
-                // 【链条款】iPad 参数: 350px / 150px / -8px
-                img.style.height = (350 * ratio) + 'px';      
-                img.style.marginTop = (150 * ratio) + 'px';    
-                img.style.marginLeft = (-8 * ratio) + 'px'; 
-                img.style.zIndex = '10';
-                img.dataset.type = 'chain';
-            } else {
-                // 【普通款】iPad 参数: 110px
-                img.style.height = (110 * ratio) + 'px';      
-                img.style.marginTop = '0px';
-                img.style.marginLeft = '0px';
-                img.dataset.type = 'normal';
-            }
-
-            img.dataset.zh = item.zh; img.dataset.hk = item.hk; img.dataset.en = item.en;
+            img.dataset.sku = item.sku; img.dataset.zh = item.zh; img.dataset.hk = item.hk; img.dataset.en = item.en;
             img.onclick = function() { container.removeChild(img); };
             container.appendChild(img);
         }
@@ -256,19 +295,14 @@
             if (e.key === 'Enter') {
                 const sku = e.target.value.trim().toUpperCase();
                 for (let cat in charmInventory) {
-                    const idx = charmInventory[cat].findIndex(i => i.sku.toUpperCase() === sku);
-                    if (idx !== -1) {
-                        const item = charmInventory[cat][idx];
-                        if (item.stockStatus === "无货") {
-                            alert("该货号目前无货 / SKU Out of Stock");
-                        } else {
-                            if (cat === '成品推荐') showFinished(cat, idx);
-                            else addItem(cat, idx);
-                        }
+                    const item = charmInventory[cat].find(i => i.sku.toUpperCase() === sku);
+                    if (item) {
+                        if (item.stockStatus === "无货") alert("售罄");
+                        else handleItemClick(item);
                         e.target.value = ''; return;
                     }
                 }
-                alert("未找到货号 / SKU not found");
+                alert("未找到货号");
             }
         }
 
@@ -276,45 +310,30 @@
             isFinishedMode = false; currentBase = img;
             document.querySelectorAll('.base-option').forEach(opt => opt.classList.remove('active'));
             el.classList.add('active');
-            refreshBackground();
-        }
-
-        function refreshBackground() {
             const area = document.getElementById('previewArea');
             area.style.backgroundImage = `url('${currentBase}')`;
             area.style.backgroundSize = '100% auto';
         }
 
-        function showFinished(cat, idx) {
-            isFinishedMode = true;
-            const item = charmInventory[cat][idx];
-            document.getElementById('charmsContainer').innerHTML = ''; 
-            const area = document.getElementById('previewArea');
-            area.style.backgroundImage = `url('${item.img}')`;
-            area.style.backgroundSize = 'contain';
-            finishedName = item[currentLang];
-        }
-
         function clearCharms() {
             document.getElementById('charmsContainer').innerHTML = '';
-            isFinishedMode = false; refreshBackground();
+            isFinishedMode = false;
+            const area = document.getElementById('previewArea');
+            area.style.backgroundImage = `url('${currentBase}')`;
+            area.style.backgroundSize = '100% auto';
         }
 
         function generateScreenshotView() {
-            const isMobile = window.innerWidth < 600;
-            const ratio = isMobile ? 0.7 : 1.0;
+            const ratio = window.innerWidth < 600 ? 0.7 : 1.0;
             document.getElementById('selectorArea').style.display = 'none';
             document.getElementById('baseSelector').style.display = 'none';
             document.querySelector('header').style.display = 'none';
             document.getElementById('ui-ssText').style.display = 'block';
             document.getElementById('ui-backBtn').style.display = 'block';
-            
             const tagContainer = document.getElementById('itemsTagContainer');
             tagContainer.innerHTML = ''; 
-            
-            if (isFinishedMode) {
-                tagContainer.innerHTML += `<span class="item-tag">${finishedName}</span>`;
-            } else {
+            if (isFinishedMode) { tagContainer.innerHTML += `<span class="item-tag">${finishedName}</span>`; }
+            else {
                 [...document.getElementById('charmsContainer').children].forEach(c => {
                     tagContainer.innerHTML += `<span class="item-tag">${c.dataset[currentLang]}</span>`;
                     if (c.dataset.type === 'pendant') c.style.marginTop = (45 * ratio) + 'px'; 
@@ -322,16 +341,27 @@
                 });
             }
             document.getElementById('selectedItemsBox').style.display = 'block';
-            const previewArea = document.getElementById('previewArea');
-            previewArea.style.flex = 'none'; 
-            previewArea.style.height = isMobile ? '45vh' : '60vh'; 
+            const area = document.getElementById('previewArea');
+            area.style.flex = 'none'; area.style.height = window.innerWidth < 600 ? '45vh' : '60vh'; 
         }
 
         function backToEdit() {
-            const isMobile = window.innerWidth < 600;
-            const ratio = isMobile ? 0.7 : 1.0;
+            const ratio = window.innerWidth < 600 ? 0.7 : 1.0;
             document.getElementById('selectorArea').style.display = 'block';
             document.getElementById('baseSelector').style.display = 'flex';
             document.querySelector('header').style.display = 'flex';
             document.getElementById('ui-ssText').style.display = 'none';
-            document.getElementById('selectedItemsBox').
+            document.getElementById('selectedItemsBox').style.display = 'none';
+            document.getElementById('ui-backBtn').style.display = 'none';
+            [...document.getElementById('charmsContainer').children].forEach(c => {
+                if (c.dataset.type === 'pendant') c.style.marginTop = (80 * ratio) + 'px';
+                else if (c.dataset.type === 'chain') c.style.marginTop = (150 * ratio) + 'px';
+            });
+            const area = document.getElementById('previewArea');
+            area.style.flex = '1'; area.style.height = 'auto';
+        }
+
+        window.onload = () => loadData(false);
+    </script>
+</body>
+</html>

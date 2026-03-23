@@ -1,0 +1,97 @@
+// ==UserScript==
+// @name         CTF 全自动29页全量同步
+// @namespace    http://tampermonkey.net/
+// @version      2.0
+// @match        *://ics-stocksearch.t-8.chowtaifook.ca/*
+// @grant        GM_xmlhttpRequest
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    const API_URL = "你的_WEB_APP_URL"; // 👈 记得换成你的 exec 链接
+
+    // 创建悬浮控制台
+    const panel = document.createElement('div');
+    panel.style = "position:fixed;top:20px;right:20px;z-index:9999;padding:15px;background:white;border:2px solid #e60012;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);width:200px;";
+    panel.innerHTML = `
+        <b style="color:#e60012">🤖 自动化同步站</b><br>
+        <small id="status-text">就绪</small><br><br>
+        <button id="start-btn" style="width:100%;padding:8px;background:#e60012;color:white;border:none;border-radius:5px;cursor:pointer;">开始全量抓取</button>
+        <button id="clear-btn" style="width:100%;margin-top:5px;padding:5px;font-size:10px;">清空缓存重置</button>
+    `;
+    document.body.appendChild(panel);
+
+    const startBtn = document.getElementById('start-btn');
+    const statusText = document.getElementById('status-text');
+
+    // 1. 自动抓取逻辑
+    function scrapePage() {
+        let cached = JSON.parse(localStorage.getItem('ctf_sync_data') || '{}');
+        let newCount = 0;
+        document.querySelectorAll(".id").forEach(e => {
+            let m = e.innerText.match(/CM\s*([A-Za-z0-9-]+)/i);
+            if (m) {
+                let sku = m[1].toUpperCase();
+                if (!cached[sku]) { cached[sku] = 1; newCount++; }
+            }
+        });
+        localStorage.setItem('ctf_sync_data', JSON.stringify(cached));
+        return { total: Object.keys(cached).length, added: newCount };
+    }
+
+    // 2. 核心主程序
+    async function runAutoPilot() {
+        startBtn.disabled = true;
+        startBtn.style.background = "#ccc";
+        
+        let { total, added } = scrapePage();
+        statusText.innerText = `当前累计: ${total} 个...`;
+
+        // 查找“下一页”按钮（这里需要根据你店里真实的 HTML 结构来）
+        // 假设它是包含 "下一页" 文字的按钮，或者是那个右箭头图标
+        let nextBtn = document.querySelector('a.next, .next-page, [title="Next Page"]'); 
+        
+        // 🌟 关键：如果没找到标准按钮，尝试寻找你照片里那个“第 1 / 29 页”旁边的箭头
+        if(!nextBtn) {
+            // 这部分需要根据你明天的实测微调选择器
+            nextBtn = Array.from(document.querySelectorAll('span, a, div')).find(el => el.innerText.includes('下一页') || el.className.includes('right'));
+        }
+
+        if (nextBtn && !nextBtn.classList.contains('disabled')) {
+            statusText.innerText = `正在进入下一页... (${total})`;
+            nextBtn.click(); 
+            // 翻页后页面会刷新，脚本会自动重新运行
+        } else {
+            // 跑完了！发送数据
+            statusText.innerText = `🚀 完工！正在运送 ${total} 个货号...`;
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: API_URL,
+                data: JSON.stringify(JSON.parse(localStorage.getItem('ctf_sync_data'))),
+                headers: { "Content-Type": "text/plain" },
+                onload: () => {
+                    alert(`✅ 全量同步成功！共计 ${total} 个货号已存入表格。`);
+                    localStorage.removeItem('ctf_sync_data'); // 发完清空，防止下次叠加
+                    location.reload();
+                }
+            });
+        }
+    }
+
+    // 检查是否正在运行中（翻页后自动继续）
+    if (localStorage.getItem('ctf_is_running') === 'true') {
+        setTimeout(runAutoPilot, 2000); // 延迟2秒等页面加载完再点下一页
+    }
+
+    startBtn.onclick = () => {
+        localStorage.setItem('ctf_is_running', 'true');
+        localStorage.setItem('ctf_sync_data', '{}');
+        runAutoPilot();
+    };
+
+    document.getElementById('clear-btn').onclick = () => {
+        localStorage.removeItem('ctf_is_running');
+        localStorage.removeItem('ctf_sync_data');
+        location.reload();
+    };
+})();

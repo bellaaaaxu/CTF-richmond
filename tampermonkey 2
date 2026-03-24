@@ -1,0 +1,63 @@
+// ==UserScript==
+// @name         CTF 自动化同步站 (Master版)
+// @match        *://ics-stocksearch.t-8.chowtaifook.ca/*
+// @grant        GM_xmlhttpRequest
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    const API_URL = "你的_WEB_APP_URL"; // 👈 换成你刚才复制的链接
+
+    // 创建控制台
+    const panel = document.createElement('div');
+    panel.style = "position:fixed;top:20px;right:20px;z-index:9999;padding:15px;background:white;border:2px solid #e60012;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.2);";
+    panel.innerHTML = `<b style="color:#e60012">🤖 库存同步中心</b><br><small id="st">就绪</small><br><br><button id="go" style="width:100%;padding:8px;background:#e60012;color:white;border:none;border-radius:5px;cursor:pointer;">开始全量同步 (29页)</button>`;
+    document.body.appendChild(panel);
+
+    const goBtn = document.getElementById('go');
+    const stText = document.getElementById('st');
+
+    // 抓取逻辑
+    function scrape() {
+        let cached = JSON.parse(localStorage.getItem('ctf_cache') || '{}');
+        document.querySelectorAll(".id").forEach(e => {
+            let m = e.innerText.match(/CM\s*([A-Za-z0-9-]+)/i);
+            if (m) cached[m[1].toUpperCase()] = 1;
+        });
+        localStorage.setItem('ctf_cache', JSON.stringify(cached));
+        return Object.keys(cached).length;
+    }
+
+    // 自动执行程序
+    async function run() {
+        let total = scrape();
+        stText.innerText = `累计已抓取: ${total} 个...`;
+        
+        // 🌟 核心：根据你拍的报错，寻找 next.png 样式的按钮
+        let nextBtn = document.querySelector('img[src*="next"]') || document.querySelector('[title*="Next"]');
+
+        if (nextBtn && !nextBtn.classList.contains('disabled')) {
+            stText.innerText = `正在进入下一页... (${total})`;
+            localStorage.setItem('ctf_run', 'true');
+            nextBtn.click();
+        } else {
+            // 完工发送
+            stText.innerText = `🚀 正在发送 ${total} 个货号...`;
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: API_URL,
+                data: JSON.stringify(JSON.parse(localStorage.getItem('ctf_cache'))),
+                headers: { "Content-Type": "text/plain" },
+                onload: () => {
+                    alert(`✅ 同步完成！共 ${total} 个货号。`);
+                    localStorage.removeItem('ctf_cache');
+                    localStorage.removeItem('ctf_run');
+                    location.reload();
+                }
+            });
+        }
+    }
+
+    if (localStorage.getItem('ctf_run') === 'true') setTimeout(run, 2500);
+    goBtn.onclick = () => { localStorage.setItem('ctf_cache', '{}'); run(); };
+})();
